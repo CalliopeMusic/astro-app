@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Astral · Your Personal Reading</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&family=Lato:wght@300;400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --gold: #c9a96e;
+    --gold-light: #e8d5a3;
+    --gold-dark: #8b6914;
+    --deep: #0d0a14;
+    --mid: #1a1525;
+    --surface: #221c30;
+    --surface2: #2d2540;
+    --text: #e8e0d5;
+    --text-muted: #9d8fa0;
+    --accent-teal: #7ecdc4;
+    --accent-rose: #e07070;
+    --accent-purple: #b07fd4;
+    --accent-blue: #6aaddb;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--deep);
+    color: var(--text);
+    font-family: 'Lato', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 35% 40%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 10%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 55%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 20% 75%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 85%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(2px 2px at 50% 50%, rgba(201,169,110,0.2) 0%, transparent 100%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; min-height: 100vh; position: relative; z-index: 1; }
+  .screen.active { display: flex; }
+
+  /* ══════════════════════════════════
+     AUTH SCREEN
+  ══════════════════════════════════ */
+  #screen-auth {
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .auth-card {
+    background: var(--surface);
+    border: 1px solid rgba(201,169,110,0.2);
+    border-radius: 24px;
+    padding: 48px 40px;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    animation: fadeInUp 0.6s ease both;
+  }
+
+  .auth-glyph {
+    font-size: 36px;
+    color: var(--gold);
+    margin-bottom: 16px;
+    opacity: 0.85;
+  }
+
+  .auth-title {
+    font-family: 'Cinzel', serif;
+    font-size: 26px;
+    letter-spacing: 4px;
+    color: var(--gold-light);
+    margin-bottom: 8px;
+  }
+
+  .auth-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-bottom: 36px;
+    line-height: 1.6;
+  }
+
+  .auth-tabs {
+    display: flex;
+    background: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 28px;
+  }
+
+  .auth-tab {
+    flex: 1;
+    padding: 9px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .auth-tab.active {
+    background: rgba(201,169,110,0.18);
+    color: var(--gold-light);
+    border: 1px solid rgba(201,169,110,0.3);
+  }
+
+  .auth-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+    text-align: left;
+  }
+
+  .auth-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.75;
+  }
+
+  .auth-input {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(201,169,110,0.2);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    padding: 12px 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  .auth-input:focus { border-color: rgba(201,169,110,0.55); }
+  .auth-input::placeholder { color: var(--text-muted); opacity: 0.5; }
+
+  .auth-btn {
+    width: 100%;
+    background: linear-gradient(135deg, rgba(201,169,110,0.35), rgba(201,169,110,0.15));
+    border: 1px solid rgba(201,169,110,0.6);
+    color: var(--gold-light);
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.22s;
+    margin-top: 8px;
+  }
+
+  .auth-btn:hover { background: rgba(201,169,110,0.4); transform: translateY(-1px); }
+  .auth-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .auth-msg {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+    margin-top: 16px;
+    min-height: 20px;
+    line-height: 1.5;
+  }
+
+  .auth-msg.error { color: var(--accent-rose); }
+  .auth-msg.success { color: var(--accent-teal); }
+
+  /* ══════════════════════════════════
+     ONBOARDING SCREEN
+  ══════════════════════════════════ */
+  #screen-onboarding {
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    flex-direction: column;
+  }
+
+  .ob-card {
+    background: var(--surface);
+    border: 1px solid rgba(201,169,110,0.2);
+    border-radius: 24px;
+    padding: 48px 40px;
+    width: 100%;
+    max-width: 520px;
+    animation: fadeInUp 0.6s ease both;
+  }
+
+  .ob-header {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+
+  .ob-glyph { font-size: 32px; color: var(--gold); margin-bottom: 14px; }
+
+  .ob-title {
+    font-family: 'Cinzel', serif;
+    font-size: 20px;
+    letter-spacing: 3px;
+    color: var(--gold-light);
+    margin-bottom: 8px;
+  }
+
+  .ob-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .ob-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .ob-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.75;
+  }
+
+  .ob-label span {
+    color: var(--text-muted);
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 11px;
+    letter-spacing: 0;
+    text-transform: none;
+    opacity: 0.7;
+    margin-left: 6px;
+  }
+
+  .ob-input {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(201,169,110,0.2);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    padding: 12px 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+    color-scheme: dark;
+  }
+
+  .ob-input:focus { border-color: rgba(201,169,110,0.55); }
+
+  .ob-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .ob-place-wrap { position: relative; }
+
+  .ob-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: var(--surface2);
+    border: 1px solid rgba(201,169,110,0.25);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    z-index: 10;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+
+  .ob-suggestion {
+    padding: 10px 16px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+  }
+
+  .ob-suggestion:hover { background: rgba(201,169,110,0.08); color: var(--text); }
+  .ob-suggestion:last-child { border-bottom: none; }
+
+  .ob-tz-note {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--text-muted);
+    opacity: 0.6;
+    margin-top: 4px;
+  }
+
+  .ob-submit {
+    width: 100%;
+    background: linear-gradient(135deg, rgba(201,169,110,0.35), rgba(201,169,110,0.15));
+    border: 1px solid rgba(201,169,110,0.6);
+    color: var(--gold-light);
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.22s;
+    margin-top: 8px;
+  }
+
+  .ob-submit:hover:not(:disabled) { background: rgba(201,169,110,0.4); transform: translateY(-1px); }
+  .ob-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .ob-msg {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+    margin-top: 16px;
+    text-align: center;
+    min-height: 20px;
+  }
+
+  .ob-msg.error { color: var(--accent-rose); }
+
+  /* ══════════════════════════════════
+     DASHBOARD SCREEN
+  ══════════════════════════════════ */
+  #screen-dashboard {
+    flex-direction: column;
+  }
+
+  .dash-container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+    width: 100%;
+  }
+
+  /* Top bar */
+  .dash-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0 0;
+    margin-bottom: 8px;
+  }
+
+  .dash-topbar-name {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--gold);
+    opacity: 0.7;
+    text-transform: uppercase;
+  }
+
+  .dash-signout {
+    background: transparent;
+    border: 1px solid rgba(201,169,110,0.15);
+    color: var(--text-muted);
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    letter-spacing: 2px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .dash-signout:hover { color: var(--gold); border-color: rgba(201,169,110,0.35); }
+
+  /* Header */
+  .dash-header {
+    text-align: center;
+    padding: 32px 0 40px;
+    animation: fadeInUp 0.7s ease both;
+  }
+
+  .dash-header-ornament { font-size: 24px; letter-spacing: 10px; color: var(--gold); opacity: 0.6; margin-bottom: 16px; }
+
+  .dash-header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(26px, 5vw, 46px);
+    font-weight: 400;
+    color: var(--gold-light);
+    letter-spacing: 4px;
+  }
+
+  .dash-birth-details {
+    margin-top: 10px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+
+  .dash-natal-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 16px;
+  }
+
+  .ntag {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: var(--gold-light);
+    background: rgba(201,169,110,0.1);
+    border: 1px solid rgba(201,169,110,0.25);
+    border-radius: 20px;
+    padding: 4px 12px;
+  }
+
+  /* Tab nav */
+  .tab-nav {
+    display: flex;
+    gap: 0;
+    margin: 0 0 36px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(201,169,110,0.15);
+    border-radius: 14px;
+    padding: 5px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tab-nav::-webkit-scrollbar { display: none; }
+
+  .tab-btn {
+    flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px;
+    padding: 11px 18px;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    color: var(--text-muted);
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+    white-space: nowrap;
+  }
+
+  .tab-btn:hover { color: var(--gold-light); }
+
+  .tab-btn.active {
+    background: linear-gradient(135deg, rgba(201,169,110,0.2), rgba(201,169,110,0.08));
+    border: 1px solid rgba(201,169,110,0.3);
+    color: var(--gold-light);
+  }
+
+  .tab-icon { font-size: 14px; }
+
+  /* Tab pages */
+  .tab-page { display: none; animation: fadeInUp 0.35s ease both; }
+  .tab-page.active { display: block; }
+
+  /* Section title */
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(201,169,110,0.4), transparent);
+  }
+
+  /* ── CHART TAB ── */
+  .chart-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 40px;
+  }
+
+  @media (max-width: 600px) { .chart-section { grid-template-columns: 1fr; } }
+
+  .chart-wheel-wrap {
+    background: var(--surface);
+    border: 1px solid rgba(201,169,110,0.15);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  #chart-wheel { width: 100%; max-width: 340px; }
+
+  .chart-tables { display: flex; flex-direction: column; gap: 16px; }
+
+  .chart-table-block {
+    background: var(--surface);
+    border: 1px solid rgba(201,169,110,0.12);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .chart-table-title {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid rgba(201,169,110,0.1);
+  }
+
+  .chart-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .chart-table thead th {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    padding: 6px 14px;
+    text-align: left;
+    background: rgba(0,0,0,0.2);
+  }
+
+  .chart-table tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+  }
+
+  .chart-table tbody tr:hover { background: rgba(201,169,110,0.05); }
+  .chart-table tbody tr:last-child { border-bottom: none; }
+
+  .chart-table tbody td {
+    padding: 6px 14px;
+    color: var(--text-muted);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13.5px;
+  }
+
+  .chart-table tbody td:first-child { color: var(--text); }
+
+  .retro { color: var(--accent-rose); font-size: 10px; margin-left: 2px; }
+
+  /* ── ORACLE TAB ── */
+  .oracle-wrap {
+    background: linear-gradient(160deg, rgba(201,169,110,0.05), rgba(0,0,0,0.2));
+    border: 1px solid rgba(201,169,110,0.18);
+    border-radius: 20px;
+    padding: 32px 36px;
+    margin-bottom: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .oracle-wrap::after {
+    content: '✦';
+    position: absolute;
+    bottom: -30px; right: 20px;
+    font-size: 120px;
+    color: rgba(201,169,110,0.03);
+    pointer-events: none;
+  }
+
+  .oracle-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 24px; padding-bottom: 20px;
+    border-bottom: 1px solid rgba(201,169,110,0.12);
+  }
+
+  .oracle-glyph { font-size: 28px; color: var(--gold); }
+
+  .oracle-title {
+    font-family: 'Cinzel', serif;
+    font-size: 16px; letter-spacing: 3px;
+    color: var(--gold-light);
+    margin-bottom: 4px;
+  }
+
+  .oracle-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic; font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .oracle-suggestions {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .oracle-suggest {
+    background: rgba(201,169,110,0.06);
+    border: 1px solid rgba(201,169,110,0.16);
+    color: var(--text-muted);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13.5px;
+    padding: 8px 18px;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .oracle-suggest:hover {
+    background: rgba(201,169,110,0.14);
+    color: var(--gold-light);
+    border-color: rgba(201,169,110,0.45);
+  }
+
+  .oracle-input-row { display: flex; gap: 12px; align-items: flex-end; }
+
+  .oracle-textarea {
+    flex: 1;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(201,169,110,0.2);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    padding: 14px 18px;
+    resize: none;
+    line-height: 1.55;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  .oracle-textarea:focus { border-color: rgba(201,169,110,0.55); }
+  .oracle-textarea::placeholder { color: var(--text-muted); opacity: 0.45; }
+
+  .oracle-ask-btn {
+    background: linear-gradient(160deg, rgba(201,169,110,0.3), rgba(201,169,110,0.1));
+    border: 1px solid rgba(201,169,110,0.6);
+    color: var(--gold-light);
+    font-family: 'Cinzel', serif;
+    font-size: 9px; letter-spacing: 2.5px;
+    padding: 14px 22px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.22s;
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+
+  .oracle-ask-btn:hover:not(:disabled) {
+    background: rgba(201,169,110,0.4);
+    transform: translateY(-2px);
+  }
+
+  .oracle-ask-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .oracle-loading {
+    display: none; align-items: center; gap: 12px;
+    padding: 20px 0;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    color: var(--text-muted); font-size: 15px;
+  }
+
+  .oracle-pulse { animation: pulse 1.4s ease-in-out infinite; color: var(--gold); }
+
+  .oracle-response-wrap {
+    display: none;
+    margin-top: 28px;
+    padding: 24px 28px;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(201,169,110,0.15);
+    border-radius: 14px;
+    animation: fadeInUp 0.5s ease both;
+  }
+
+  .oracle-response-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; padding-bottom: 12px;
+    border-bottom: 1px solid rgba(201,169,110,0.1);
+  }
+
+  .oracle-response-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px; letter-spacing: 3.5px;
+    color: var(--gold); text-transform: uppercase;
+  }
+
+  .oracle-response-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px; line-height: 1.9;
+    color: #d4c8e4;
+    white-space: pre-wrap;
+  }
+
+  .oracle-error {
+    display: none;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+    color: var(--accent-rose);
+    padding: 12px 0;
+  }
+
+  /* ── LOADING STATE ── */
+  .dash-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 16px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    color: var(--text-muted);
+    font-size: 16px;
+  }
+
+  .dash-loading-glyph {
+    font-size: 32px;
+    color: var(--gold);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+
+  /* ── ASPECTS ── */
+  .aspects-list { display: flex; flex-direction: column; gap: 0; margin-bottom: 40px; }
+
+  .aspect-row {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 12px 18px;
+    background: var(--surface);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    border-left: 3px solid transparent;
+    transition: background 0.15s;
+  }
+
+  .aspect-row:first-child { border-radius: 12px 12px 0 0; }
+  .aspect-row:last-child  { border-radius: 0 0 12px 12px; border-bottom: none; }
+  .aspect-row:hover { background: var(--surface2); }
+  .aspect-row.easy    { border-left-color: var(--accent-teal); }
+  .aspect-row.hard    { border-left-color: var(--accent-rose); }
+  .aspect-row.neutral { border-left-color: var(--accent-purple); }
+
+  .aspect-planets { font-size: 16px; min-width: 80px; flex-shrink: 0; }
+
+  .aspect-detail {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px; color: var(--text-muted); line-height: 1.5;
+  }
+
+  .aspect-detail strong { color: var(--text); font-weight: 500; }
+
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+
+  @media (max-width: 480px) {
+    .auth-card { padding: 32px 24px; }
+    .ob-card { padding: 32px 20px; }
+    .ob-row { grid-template-columns: 1fr; }
+    .oracle-wrap { padding: 24px 18px; }
+    .oracle-input-row { flex-direction: column; }
+    .oracle-ask-btn { width: 100%; justify-content: center; }
+    .tab-btn { padding: 9px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     SCREEN 1: AUTH
+══════════════════════════════════ -->
+<div id="screen-auth" class="screen active">
+  <div class="auth-card">
+    <div class="auth-glyph">✦</div>
+    <div class="auth-title">Astral</div>
+    <p class="auth-sub">Your personal astrological reading,<br>calculated from the moment you arrived.</p>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="setAuthTab('signin')">Sign In</button>
+      <button class="auth-tab" onclick="setAuthTab('signup')">Create Account</button>
+    </div>
+
+    <div id="auth-form">
+      <div class="auth-field">
+        <label class="auth-label">Email</label>
+        <input type="email" id="auth-email" class="auth-input" placeholder="you@example.com" />
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Password</label>
+        <input type="password" id="auth-password" class="auth-input" placeholder="••••••••" />
+      </div>
+      <button class="auth-btn" id="auth-submit-btn" onclick="handleAuth()">✦ &nbsp; Sign In</button>
+    </div>
+
+    <div id="auth-msg" class="auth-msg"></div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     SCREEN 2: ONBOARDING
+══════════════════════════════════ -->
+<div id="screen-onboarding" class="screen">
+  <div class="ob-card">
+    <div class="ob-header">
+      <div class="ob-glyph">✦</div>
+      <div class="ob-title">Your Birth Details</div>
+      <p class="ob-sub">To calculate your natal chart, we need the exact moment and place of your birth.</p>
+    </div>
+
+    <div class="ob-field">
+      <label class="ob-label">Your Name</label>
+      <input type="text" id="ob-name" class="ob-input" placeholder="First name" />
+    </div>
+
+    <div class="ob-row">
+      <div class="ob-field">
+        <label class="ob-label">Birth Date</label>
+        <input type="date" id="ob-date" class="ob-input" />
+      </div>
+      <div class="ob-field">
+        <label class="ob-label">Birth Time <span>as exact as possible</span></label>
+        <input type="time" id="ob-time" class="ob-input" />
+      </div>
+    </div>
+
+    <div class="ob-field">
+      <label class="ob-label">Birth Place <span>city, country</span></label>
+      <div class="ob-place-wrap">
+        <input type="text" id="ob-place" class="ob-input" placeholder="e.g. Chicago, Illinois" oninput="debouncedGeocode()" autocomplete="off" />
+        <div id="ob-suggestions" class="ob-suggestions" style="display:none"></div>
+      </div>
+    </div>
+
+    <div class="ob-row" style="display:none" id="ob-coords-row">
+      <div class="ob-field">
+        <label class="ob-label">Latitude</label>
+        <input type="number" id="ob-lat" class="ob-input" step="0.0001" readonly />
+      </div>
+      <div class="ob-field">
+        <label class="ob-label">Longitude</label>
+        <input type="number" id="ob-lon" class="ob-input" step="0.0001" readonly />
+      </div>
+    </div>
+
+    <div class="ob-field">
+      <label class="ob-label">UTC Offset at Birth <span>e.g. EST = -5, BST = +1</span></label>
+      <input type="number" id="ob-tz" class="ob-input" placeholder="-5" step="0.5" />
+      <div class="ob-tz-note">Check your birth timezone at <a href="https://www.timeanddate.com/time/map/" target="_blank" style="color:var(--gold)">timeanddate.com</a></div>
+    </div>
+
+    <button class="ob-submit" id="ob-submit-btn" onclick="submitBirthData()">✦ &nbsp; Calculate My Chart</button>
+    <div id="ob-msg" class="ob-msg"></div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     SCREEN 3: DASHBOARD
+══════════════════════════════════ -->
+<div id="screen-dashboard" class="screen">
+  <div class="dash-container">
+
+    <div class="dash-topbar">
+      <div class="dash-topbar-name" id="dash-topbar-name"></div>
+      <button class="dash-signout" onclick="signOut()">Sign Out</button>
+    </div>
+
+    <header class="dash-header">
+      <div class="dash-header-ornament">✦ ✦ ✦</div>
+      <h1 id="dash-name">Your Chart</h1>
+      <p class="dash-birth-details" id="dash-birth-details"></p>
+      <div class="dash-natal-tags" id="dash-natal-tags"></div>
+    </header>
+
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="chart" onclick="switchTab('chart')">
+        <span class="tab-icon">☽</span><span>Natal Chart</span>
+      </button>
+      <button class="tab-btn" data-tab="oracle" onclick="switchTab('oracle')">
+        <span class="tab-icon">✦</span><span>Oracle</span>
+      </button>
+      <button class="tab-btn" data-tab="aspects" onclick="switchTab('aspects')">
+        <span class="tab-icon">⟡</span><span>Aspects</span>
+      </button>
+    </nav>
+
+    <!-- Loading -->
+    <div id="dash-loading" class="dash-loading">
+      <div class="dash-loading-glyph">✦</div>
+      <span>Calculating your chart…</span>
+    </div>
+
+    <!-- Chart Tab -->
+    <div id="page-chart" class="tab-page active" style="display:none">
+      <div class="section-title">Natal Chart</div>
+      <div class="chart-section">
+        <div class="chart-wheel-wrap">
+          <svg id="chart-wheel" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+        <div class="chart-tables">
+          <div class="chart-table-block">
+            <div class="chart-table-title">Planets</div>
+            <table class="chart-table">
+              <thead><tr><th>Planet</th><th>Sign</th><th>Degree</th><th>House</th></tr></thead>
+              <tbody id="planet-table-body"></tbody>
+            </table>
+          </div>
+          <div class="chart-table-block">
+            <div class="chart-table-title">Houses</div>
+            <table class="chart-table">
+              <thead><tr><th>House</th><th>Sign</th><th>Life Area</th></tr></thead>
+              <tbody id="house-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Oracle Tab -->
+    <div id="page-oracle" class="tab-page" style="display:none">
+      <div class="oracle-wrap">
+        <div class="oracle-header">
+          <span class="oracle-glyph">✦</span>
+          <div>
+            <div class="oracle-title">Ask the Oracle</div>
+            <div class="oracle-sub" id="oracle-sub">The sky above, read against your natal chart</div>
+          </div>
+        </div>
+
+        <div class="oracle-suggestions">
+          <button class="oracle-suggest" onclick="useOracleSuggestion(this)">What energy should I watch out for today?</button>
+          <button class="oracle-suggest" onclick="useOracleSuggestion(this)">Is now a good time to make a big decision?</button>
+          <button class="oracle-suggest" onclick="useOracleSuggestion(this)">What does today say about my career?</button>
+          <button class="oracle-suggest" onclick="useOracleSuggestion(this)">How are my relationships looking right now?</button>
+        </div>
+
+        <div class="oracle-input-row">
+          <textarea id="oracle-input" class="oracle-textarea" rows="2" placeholder="Ask the Oracle anything…"></textarea>
+          <button class="oracle-ask-btn" id="oracle-btn" onclick="askOracle()">
+            <span style="font-size:18px">✦</span>
+            <span>Ask</span>
+          </button>
+        </div>
+
+        <div id="oracle-loading" class="oracle-loading">
+          <span class="oracle-pulse">✦</span> Consulting the stars…
+        </div>
+        <div id="oracle-error" class="oracle-error"></div>
+        <div id="oracle-response-wrap" class="oracle-response-wrap">
+          <div class="oracle-response-header">
+            <span class="oracle-response-label">✦ The Oracle Speaks</span>
+          </div>
+          <div id="oracle-response" class="oracle-response-text"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aspects Tab -->
+    <div id="page-aspects" class="tab-page" style="display:none">
+      <div class="section-title">Natal Aspects</div>
+      <div id="aspects-list" class="aspects-list"></div>
+    </div>
+
+  </div>
+</div>
+
+
+<script>
+// ══════════════════════════════════════════
+// SUPABASE INIT
+// Replace these with your actual Supabase project values
+// ══════════════════════════════════════════
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── STATE ──
+let currentUser = null;
+let userProfile = null;
+let userChart   = null;
+
+// ══════════════════════════════════════════
+// SCREENS
+// ══════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ══════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════
+let authMode = 'signin';
+
+function setAuthTab(mode) {
+  authMode = mode;
+  document.querySelectorAll('.auth-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && mode === 'signin') || (i === 1 && mode === 'signup'));
+  });
+  const btn = document.getElementById('auth-submit-btn');
+  btn.textContent = mode === 'signin' ? '✦   Sign In' : '✦   Create Account';
+  document.getElementById('auth-msg').textContent = '';
+}
+
+async function handleAuth() {
+  const email    = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const btn      = document.getElementById('auth-submit-btn');
+  const msg      = document.getElementById('auth-msg');
+
+  if (!email || !password) { msg.className = 'auth-msg error'; msg.textContent = 'Please enter your email and password.'; return; }
+
+  btn.disabled = true;
+  msg.className = 'auth-msg'; msg.textContent = '';
+
+  try {
+    let result;
+    if (authMode === 'signup') {
+      result = await supabase.auth.signUp({ email, password });
+    } else {
+      result = await supabase.auth.signInWithPassword({ email, password });
+    }
+
+    if (result.error) throw result.error;
+
+    if (authMode === 'signup' && !result.data.session) {
+      msg.className = 'auth-msg success';
+      msg.textContent = 'Check your email to confirm your account, then sign in.';
+      return;
+    }
+
+    currentUser = result.data.user;
+    await loadUserProfile();
+
+  } catch (err) {
+    msg.className = 'auth-msg error';
+    msg.textContent = err.message || 'Something went wrong. Please try again.';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function signOut() {
+  await supabase.auth.signOut();
+  currentUser = null; userProfile = null; userChart = null;
+  showScreen('screen-auth');
+}
+
+// Enter key on auth form
+document.getElementById('auth-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleAuth();
+});
+
+// ══════════════════════════════════════════
+// PROFILE LOAD
+// ══════════════════════════════════════════
+async function loadUserProfile() {
+  if (!currentUser) return;
+
+  try {
+    const res = await fetch(`/api/profile?userId=${currentUser.id}`);
+    if (res.status === 404) {
+      // New user — needs onboarding
+      showScreen('screen-onboarding');
+      return;
+    }
+    if (!res.ok) throw new Error('Failed to load profile');
+
+    const { profile } = await res.json();
+    userProfile = profile;
+
+    if (profile.chart) {
+      userChart = profile.chart;
+      renderDashboard();
+      showScreen('screen-dashboard');
+    } else {
+      showScreen('screen-onboarding');
+    }
+  } catch (err) {
+    console.error(err);
+    showScreen('screen-onboarding');
+  }
+}
+
+// ══════════════════════════════════════════
+// GEOCODE (place → lat/lon)
+// ══════════════════════════════════════════
+let geocodeTimer = null;
+let selectedLat = null, selectedLon = null;
+
+function debouncedGeocode() {
+  clearTimeout(geocodeTimer);
+  selectedLat = null; selectedLon = null;
+  document.getElementById('ob-coords-row').style.display = 'none';
+  geocodeTimer = setTimeout(geocodePlace, 600);
+}
+
+async function geocodePlace() {
+  const place = document.getElementById('ob-place').value.trim();
+  if (place.length < 3) { document.getElementById('ob-suggestions').style.display = 'none'; return; }
+
+  try {
+    const res = await fetch(`/api/geocode?place=${encodeURIComponent(place)}`);
+    const data = await res.json();
+    if (!data.results?.length) { document.getElementById('ob-suggestions').style.display = 'none'; return; }
+
+    const box = document.getElementById('ob-suggestions');
+    box.innerHTML = data.results.map((r, i) =>
+      `<div class="ob-suggestion" onclick="selectPlace(${i}, ${r.lat}, ${r.lon}, '${r.displayName.replace(/'/g, "\\'")}')">
+        ${r.displayName}
+      </div>`
+    ).join('');
+    box.style.display = 'block';
+  } catch (e) {
+    document.getElementById('ob-suggestions').style.display = 'none';
+  }
+}
+
+function selectPlace(i, lat, lon, name) {
+  selectedLat = lat; selectedLon = lon;
+  document.getElementById('ob-place').value = name.split(',').slice(0, 3).join(',');
+  document.getElementById('ob-lat').value = lat;
+  document.getElementById('ob-lon').value = lon;
+  document.getElementById('ob-coords-row').style.display = 'grid';
+  document.getElementById('ob-suggestions').style.display = 'none';
+}
+
+// ══════════════════════════════════════════
+// ONBOARDING SUBMIT
+// ══════════════════════════════════════════
+async function submitBirthData() {
+  const name  = document.getElementById('ob-name').value.trim();
+  const date  = document.getElementById('ob-date').value;
+  const time  = document.getElementById('ob-time').value;
+  const lat   = parseFloat(document.getElementById('ob-lat').value);
+  const lon   = parseFloat(document.getElementById('ob-lon').value);
+  const tz    = parseFloat(document.getElementById('ob-tz').value);
+  const btn   = document.getElementById('ob-submit-btn');
+  const msg   = document.getElementById('ob-msg');
+
+  if (!name || !date || !time || !selectedLat || isNaN(tz)) {
+    msg.className = 'ob-msg error';
+    msg.textContent = 'Please fill in all fields and select a birth place from the list.';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.className = 'ob-msg'; msg.textContent = '✦ Calculating your chart…';
+
+  try {
+    const [year, month, day] = date.split('-').map(Number);
+    const [hour, minute]     = time.split(':').map(Number);
+
+    // Call the chart calculation API
+    const chartRes = await fetch('/api/chart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ year, month, day, hour, minute, lat, lon, timezone: tz }),
+    });
+
+    if (!chartRes.ok) throw new Error('Chart calculation failed');
+    const chart = await chartRes.json();
+
+    // Save to Supabase via profile API
+    const saveRes = await fetch('/api/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId:     currentUser.id,
+        name,
+        birthDate:  date,
+        birthTime:  time,
+        birthPlace: document.getElementById('ob-place').value,
+        lat, lon, timezone: tz,
+        chart,
+      }),
+    });
+
+    if (!saveRes.ok) throw new Error('Failed to save profile');
+    const { profile } = await saveRes.json();
+    userProfile = profile;
+    userChart   = chart;
+
+    renderDashboard();
+    showScreen('screen-dashboard');
+
+  } catch (err) {
+    msg.className = 'ob-msg error';
+    msg.textContent = err.message || 'Something went wrong. Please try again.';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ══════════════════════════════════════════
+// DASHBOARD RENDER
+// ══════════════════════════════════════════
+function renderDashboard() {
+  const chart   = userChart;
+  const profile = userProfile;
+  const name    = profile.name || 'Your Chart';
+
+  // Hide loading, show tab pages
+  document.getElementById('dash-loading').style.display = 'none';
+  document.querySelectorAll('.tab-page').forEach(p => {
+    if (p.classList.contains('active')) p.style.display = 'block';
+  });
+
+  // Header
+  document.getElementById('dash-name').textContent = name;
+  document.getElementById('dash-topbar-name').textContent = name;
+
+  const birthDate = profile.birth_date ? new Date(profile.birth_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+  const birthTime = profile.birth_time || '';
+  const birthPlace = profile.birth_place || '';
+  document.getElementById('dash-birth-details').textContent =
+    [birthDate, birthTime, birthPlace].filter(Boolean).join(' · ');
+
+  // Natal tags
+  const sun  = chart.planets.find(p => p.name === 'Sun');
+  const moon = chart.planets.find(p => p.name === 'Moon');
+  const asc  = chart.ascendant;
+  const jup  = chart.planets.find(p => p.name === 'Jupiter');
+
+  const tags = [
+    sun  ? `☉ ${sun.sign} ${sun.deg}°`           : null,
+    moon ? `☽ ${moon.sign} ${moon.deg}°`          : null,
+    asc  ? `↑ ${asc.sign} Rising`                 : null,
+    jup  ? `♃ ${jup.sign} ${jup.deg}°${jup.retrograde ? ' R' : ''}` : null,
+  ].filter(Boolean);
+
+  document.getElementById('dash-natal-tags').innerHTML = tags
+    .map(t => `<span class="ntag">${t}</span>`)
+    .join('');
+
+  // Oracle subtitle
+  document.getElementById('oracle-sub').textContent =
+    `The sky above, read against ${name}'s natal chart`;
+
+  // Planet table
+  const planetBody = document.getElementById('planet-table-body');
+  planetBody.innerHTML = chart.planets.map(p => `
+    <tr>
+      <td>${p.symbol} ${p.name}</td>
+      <td>${p.sign}</td>
+      <td>${p.displayDeg}</td>
+      <td>${p.house}</td>
+    </tr>
+  `).join('');
+
+  // House table
+  const HOUSE_THEMES_SHORT = [
+    'Self', 'Money', 'Mind', 'Home', 'Creativity', 'Health',
+    'Partnership', 'Transformation', 'Philosophy', 'Career', 'Community', 'Inner Life'
+  ];
+  const houseBody = document.getElementById('house-table-body');
+  houseBody.innerHTML = chart.houses.map((h, i) => `
+    <tr>
+      <td>${['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][i]}</td>
+      <td>${h.sign}</td>
+      <td style="font-size:12px;opacity:0.7">${HOUSE_THEMES_SHORT[i]}</td>
+    </tr>
+  `).join('');
+
+  // Aspects
+  const aspectsList = document.getElementById('aspects-list');
+  aspectsList.innerHTML = chart.aspects.map(a => `
+    <div class="aspect-row ${a.type}">
+      <div class="aspect-planets">${a.symbol1 || a.planet1} ${a.aspectSymbol} ${a.symbol2 || a.planet2}</div>
+      <div class="aspect-detail">
+        <strong>${a.planet1} ${a.aspect} ${a.planet2}</strong>
+        &nbsp;·&nbsp; orb ${a.orb}°
+        &nbsp;·&nbsp; <span style="opacity:0.6;font-size:12px">${a.type}</span>
+      </div>
+    </div>
+  `).join('');
+
+  // Draw chart wheel
+  drawChartWheel(chart);
+}
+
+// ══════════════════════════════════════════
+// CHART WHEEL SVG
+// ══════════════════════════════════════════
+function drawChartWheel(chart) {
+  const svg = document.getElementById('chart-wheel');
+  svg.innerHTML = '';
+  const cx = 250, cy = 250;
+  const R_outer = 230, R_sign = 200, R_house = 160, R_planet = 125, R_inner = 80;
+
+  const signColors = ['#e07070','#7ecdc4','#e8d5a3','#6aaddb','#e8b44a','#a8c8a0',
+                      '#b07fd4','#e07070','#e8a060','#6aaddb','#7ecdc4','#b07fd4'];
+  const signSymbols = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+
+  const ascLon = chart.ascendant.lon;
+
+  function zodiacToAngle(absZodDeg) {
+    let angle = 180 - (absZodDeg - ascLon);
+    return ((angle % 360) + 360) % 360;
+  }
+
+  function polarToXY(angleDeg, r) {
+    const rad = (angleDeg - 90) * Math.PI / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  }
+
+  function addEl(tag, attrs, text) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    if (text) el.textContent = text;
+    svg.appendChild(el);
+    return el;
+  }
+
+  // Background
+  addEl('circle', { cx, cy, r: R_outer, fill: '#0d0a14' });
+
+  // Sign ring
+  for (let i = 0; i < 12; i++) {
+    const sO = polarToXY(zodiacToAngle(i * 30), R_outer);
+    const eO = polarToXY(zodiacToAngle((i+1) * 30), R_outer);
+    const sI = polarToXY(zodiacToAngle(i * 30), R_sign);
+    const eI = polarToXY(zodiacToAngle((i+1) * 30), R_sign);
+    const d  = `M ${sI.x} ${sI.y} L ${sO.x} ${sO.y} A ${R_outer} ${R_outer} 0 0 1 ${eO.x} ${eO.y} L ${eI.x} ${eI.y} A ${R_sign} ${R_sign} 0 0 0 ${sI.x} ${sI.y} Z`;
+    addEl('path', { d, fill: i%2===0 ? 'rgba(201,169,110,0.05)' : 'rgba(201,169,110,0.02)', stroke:'rgba(201,169,110,0.25)', 'stroke-width':'0.5' });
+    const mid = polarToXY(zodiacToAngle(i*30+15), (R_outer+R_sign)/2);
+    addEl('text', { x:mid.x, y:mid.y, 'text-anchor':'middle', 'dominant-baseline':'central', fill:signColors[i], 'font-size':'13', 'font-family':'serif', opacity:'0.9' }, signSymbols[i]);
+  }
+
+  // House lines
+  chart.houses.forEach((h, i) => {
+    const a = zodiacToAngle(h.cusp);
+    const p1 = polarToXY(a, R_house);
+    const p2 = polarToXY(a, R_sign);
+    const isAngular = [0,3,6,9].includes(i);
+    addEl('line', { x1:p1.x, y1:p1.y, x2:p2.x, y2:p2.y, stroke:isAngular ? 'rgba(201,169,110,0.7)':'rgba(201,169,110,0.3)', 'stroke-width':isAngular?'1.2':'0.8' });
+    const hMid = zodiacToAngle(h.cusp + 15);
+    const hPos = polarToXY(hMid, (R_sign+R_house)/2);
+    const hNums = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+    addEl('text', { x:hPos.x, y:hPos.y, 'text-anchor':'middle', 'dominant-baseline':'central', fill:'rgba(201,169,110,0.5)', 'font-size':'9', 'font-family':'Cinzel, serif' }, hNums[i]);
+  });
+
+  addEl('circle', { cx, cy, r:R_house, fill:'none', stroke:'rgba(201,169,110,0.2)', 'stroke-width':'0.5' });
+  addEl('circle', { cx, cy, r:R_inner, fill:'rgba(201,169,110,0.03)', stroke:'rgba(201,169,110,0.15)', 'stroke-width':'0.5' });
+
+  // Planets
+  const planetColors = {
+    'Sun':'#e8d5a3','Moon':'#c8d8f0','Mercury':'#a0c8a0','Venus':'#e8a0b8',
+    'Mars':'#e07070','Jupiter':'#e8b44a','Saturn':'#7ecdc4','Uranus':'#90c8e0',
+    'Neptune':'#b07fd4','Pluto':'#c09060','N.Node':'#d4b07f','Chiron':'#a0b8d8'
+  };
+
+  const placed = [];
+  chart.planets.forEach(p => {
+    const baseAngle = zodiacToAngle(p.lon);
+    let spreadAngle = baseAngle;
+    for (const prev of placed) {
+      if (Math.abs(spreadAngle - prev) < 12 || Math.abs(spreadAngle - prev - 360) < 12 || Math.abs(spreadAngle - prev + 360) < 12) {
+        spreadAngle += 13;
+      }
+    }
+    placed.push(spreadAngle);
+
+    const color = planetColors[p.name] || '#e8d5a3';
+    const pos   = polarToXY(spreadAngle, R_planet);
+    const tick1 = polarToXY(baseAngle, R_house - 4);
+    const tick2 = polarToXY(baseAngle, R_house - 14);
+
+    addEl('line', { x1:tick1.x, y1:tick1.y, x2:tick2.x, y2:tick2.y, stroke:color, 'stroke-width':'0.8', opacity:'0.6' });
+    if (Math.abs(spreadAngle - baseAngle) > 2) {
+      const pO = polarToXY(baseAngle, R_house - 16);
+      addEl('line', { x1:pos.x, y1:pos.y, x2:pO.x, y2:pO.y, stroke:color, 'stroke-width':'0.5', opacity:'0.3' });
+    }
+    addEl('text', { x:pos.x, y:pos.y, 'text-anchor':'middle', 'dominant-baseline':'central', fill:color, 'font-size':'13', 'font-family':'serif' }, p.symbol);
+  });
+
+  // Center label
+  const name = userProfile?.name || '';
+  addEl('text', { x:cx, y:cy-8, 'text-anchor':'middle', fill:'rgba(201,169,110,0.5)', 'font-size':'9', 'font-family':'Cinzel, serif', 'letter-spacing':'2' }, name.toUpperCase());
+  addEl('text', { x:cx, y:cy+8, 'text-anchor':'middle', fill:'rgba(201,169,110,0.35)', 'font-size':'8', 'font-family':'serif' }, userProfile?.birth_date || '');
+
+  // ASC/DSC/MC/IC labels
+  [
+    { label:'ASC', lon: chart.ascendant.lon,       offset:-12 },
+    { label:'DSC', lon: chart.ascendant.lon + 180, offset: 4  },
+    { label:'MC',  lon: chart.mc.lon,              offset:-6  },
+    { label:'IC',  lon: chart.mc.lon + 180,        offset:-6  },
+  ].forEach(a => {
+    const ang = zodiacToAngle(a.lon);
+    const p   = polarToXY(ang, R_sign - 8);
+    addEl('text', { x:p.x+a.offset, y:p.y, 'text-anchor':'middle', fill:'rgba(201,169,110,0.7)', 'font-size':'8', 'font-family':'Cinzel, serif', 'letter-spacing':'1' }, a.label);
+  });
+}
+
+// ══════════════════════════════════════════
+// TAB NAVIGATION
+// ══════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-page').forEach(p => {
+    const isActive = p.id === `page-${tab}`;
+    p.classList.toggle('active', isActive);
+    p.style.display = isActive ? 'block' : 'none';
+  });
+}
+
+// ══════════════════════════════════════════
+// ORACLE
+// ══════════════════════════════════════════
+
+// Mean planetary positions for today's sky (same low-precision formulas as emily.html)
+function calcTodayPlanets() {
+  const now = new Date();
+  const JD  = (now.getTime() / 86400000) + 2440587.5;
+  const T   = (JD - 2451545.0) / 36525;
+  function norm(x) { return ((x % 360) + 360) % 360; }
+  const SIGNS = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+  const raw = {
+    Sun:     norm(280.46646 + 36000.76983 * T),
+    Moon:    norm(218.3165  + 481267.8813 * T),
+    Mercury: norm(252.25084 + 149472.67411 * T),
+    Venus:   norm(181.97973 + 58517.81539 * T),
+    Mars:    norm(355.45332 + 19140.29934 * T),
+    Jupiter: norm(34.89503  + 3034.74612  * T),
+    Saturn:  norm(50.07780  + 1222.11353  * T),
+    Uranus:  norm(314.05500 + 428.46640   * T),
+    Neptune: norm(304.34866 + 218.45656   * T),
+    Pluto:   norm(238.92881 + 145.20910   * T),
+  };
+  const symbols = { Sun:'☉', Moon:'☽', Mercury:'☿', Venus:'♀', Mars:'♂', Jupiter:'♃', Saturn:'♄', Uranus:'♅', Neptune:'♆', Pluto:'♇' };
+  return Object.entries(raw).map(([name, lon]) => ({
+    name,
+    symbol: symbols[name],
+    lon,
+    sign: SIGNS[Math.floor(lon / 30)],
+    deg:  Math.floor(lon % 30),
+    min:  Math.floor((lon % 30 - Math.floor(lon % 30)) * 60),
+    displayDeg: `${Math.floor(lon % 30)}°${String(Math.floor((lon % 30 - Math.floor(lon % 30)) * 60)).padStart(2,'0')}'`,
+  }));
+}
+
+function useOracleSuggestion(btn) {
+  document.getElementById('oracle-input').value = btn.textContent.trim();
+  document.getElementById('oracle-input').focus();
+}
+
+async function askOracle() {
+  const question = document.getElementById('oracle-input').value.trim();
+  if (!question || !userChart) return;
+
+  const btn = document.getElementById('oracle-btn');
+  btn.disabled = true;
+  document.getElementById('oracle-response-wrap').style.display = 'none';
+  document.getElementById('oracle-error').style.display = 'none';
+  document.getElementById('oracle-loading').style.display = 'flex';
+
+  try {
+    const todayPlanets = calcTodayPlanets();
+    const res = await fetch('/api/oracle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question,
+        chart: userChart,
+        todayPlanets,
+        userName: userProfile?.name || 'You',
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Oracle failed');
+
+    document.getElementById('oracle-loading').style.display = 'none';
+    document.getElementById('oracle-response').textContent = data.response;
+    document.getElementById('oracle-response-wrap').style.display = 'block';
+    document.getElementById('oracle-response-wrap').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    document.getElementById('oracle-input').value = '';
+
+  } catch (err) {
+    document.getElementById('oracle-loading').style.display = 'none';
+    document.getElementById('oracle-error').textContent = err.message || 'Something went wrong. Please try again.';
+    document.getElementById('oracle-error').style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('oracle-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); askOracle(); }
+});
+
+// ══════════════════════════════════════════
+// INIT — check for existing session
+// ══════════════════════════════════════════
+(async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    currentUser = session.user;
+    await loadUserProfile();
+  }
+})();
+</script>
+</body>
+</html>
